@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Sex {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+enum SetType {
+  WARMUP
+  WORKING
+  FAILURE
+  DROPSET
+}
+
+// --- Auth (NextAuth) + perfil del usuario ---
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+
+  sex       Sex?
+  heightCm  Int?
+  birthDate DateTime?
+
+  accounts Account[]
+  sessions Session[]
+
+  routines         Routine[]
+  workoutSessions  WorkoutSession[]
+  bodyMeasurements BodyMeasurement[]
+  meals            Meal[]
+  nutritionGoals   NutritionGoal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- Entrenamiento ---
+
+model Exercise {
+  id          String  @id @default(cuid())
+  name        String
+  muscleGroup String
+  equipment   String?
+
+  routineExercises RoutineExercise[]
+  setLogs          SetLog[]
+
+  createdAt DateTime @default(now())
+}
+
+model Routine {
+  id     String @id @default(cuid())
+  userId String
+  name   String
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routineExercises RoutineExercise[]
+  workoutSessions  WorkoutSession[]
+
+  createdAt DateTime @default(now())
+}
+
+model RoutineExercise {
+  id         String @id @default(cuid())
+  routineId  String
+  exerciseId String
+  targetSets Int
+  targetReps Int?
+  order      Int    @default(0)
+
+  routine  Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+}
+
+model WorkoutSession {
+  id          String   @id @default(cuid())
+  userId      String
+  routineId   String?
+  sessionDate DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routine Routine? @relation(fields: [routineId], references: [id])
+  setLogs SetLog[]
+
+  createdAt DateTime @default(now())
+}
+
+// Modo básico vs avanzado: rpe, restSeconds y setType quedan opcionales.
+// El usuario "básico" simplemente no los completa.
+model SetLog {
+  id          String   @id @default(cuid())
+  sessionId   String
+  exerciseId  String
+  weightKg    Float
+  reps        Int
+  rpe         Float?
+  restSeconds Int?
+  setType     SetType?
+
+  session  WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise Exercise       @relation(fields: [exerciseId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// --- Monitoreo manual ---
+
+model BodyMeasurement {
+  id         String   @id @default(cuid())
+  userId     String
+  measuredAt DateTime @default(now())
+  weightKg   Float?
+  chestCm    Float?
+  waistCm    Float?
+  hipCm      Float?
+  armCm      Float?
+  thighCm    Float?
+  photoUrl   String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- Nutrición ---
+
+model Meal {
+  id       String   @id @default(cuid())
+  userId   String
+  mealDate DateTime @default(now())
+  mealType MealType
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mealItems MealItem[]
+}
+
+model MealItem {
+  id       String  @id @default(cuid())
+  mealId   String
+  foodName String
+  calories Int
+  proteinG Float?
+  carbsG   Float?
+  fatG     Float?
+
+  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+}
+
+// Un registro por día: permite que el objetivo varíe según el entrenamiento de esa fecha.
+model NutritionGoal {
+  id             String   @id @default(cuid())
+  userId         String
+  goalDate       DateTime @default(now())
+  calorieTarget  Int
+  proteinTargetG Float?
+  carbsTargetG   Float?
+  fatTargetG     Float?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, goalDate])
+}
