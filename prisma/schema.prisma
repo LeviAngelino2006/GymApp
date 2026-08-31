@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Sex {
@@ -94,7 +95,7 @@ model VerificationToken {
 
 model Exercise {
   id          String  @id @default(cuid())
-  name        String
+  name        String  @unique
   muscleGroup String
   equipment   String?
 
@@ -189,13 +190,14 @@ model Meal {
 }
 
 model MealItem {
-  id       String  @id @default(cuid())
-  mealId   String
-  foodName String
-  calories Int
-  proteinG Float?
-  carbsG   Float?
-  fatG     Float?
+  id            String  @id @default(cuid())
+  mealId        String
+  foodName      String
+  quantityGrams Float?
+  calories      Int
+  proteinG      Float?
+  carbsG        Float?
+  fatG          Float?
 
   meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
 }

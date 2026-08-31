@@ -1,3 +1,8 @@
+import Link from "next/link";
+import { getServerSession } from "next-auth";
+
+import { authOptions } from "@/lib/auth";
+
 function StatCard({
   label,
   value,
@@ -18,7 +23,45 @@ function StatCard({
   );
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return (
+      <div className="space-y-6">
+        <section>
+          <p className="font-mono text-xs uppercase tracking-widest text-mist">
+            Bitácora
+          </p>
+          <h1 className="mt-2 font-display text-3xl font-medium tracking-tight">
+            Todo lo que registrás, en un solo lugar.
+          </h1>
+          <p className="mt-2 max-w-xl text-mist">
+            Rutinas, series, comidas y progreso. Creá una cuenta o entrá para
+            empezar.
+          </p>
+        </section>
+
+        <section className="flex gap-3">
+          <Link
+            href="/login"
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-90"
+          >
+            Iniciar sesión
+          </Link>
+          <Link
+            href="/register"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-accent"
+          >
+            Crear cuenta
+          </Link>
+        </section>
+      </div>
+    );
+  }
+
+  const greetingName = session.user.name ?? session.user.email ?? "de nuevo";
+
   return (
     <div className="space-y-10">
       <section>
@@ -26,7 +69,7 @@ export default function HomePage() {
           Hoy
         </p>
         <h1 className="mt-2 font-display text-3xl font-medium tracking-tight">
-          Todo lo que registrás, en un solo lugar.
+          Hola, {greetingName}.
         </h1>
         <p className="mt-2 max-w-xl text-mist">
           Rutinas, series, comidas y progreso — la base para tu próxima etapa

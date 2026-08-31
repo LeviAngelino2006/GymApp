@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Mono, Inter, Space_Grotesk } from "next/font/google";
 
 import { Nav } from "@/components/nav";
+import { AuthProvider } from "@/components/session-provider";
 
 import "./globals.css";
 
@@ -37,8 +38,10 @@ export default function RootLayout({
       <body
         className={`${display.variable} ${sans.variable} ${mono.variable} font-sans bg-background text-ink antialiased`}
       >
-        <Nav />
-        <main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
+        <AuthProvider>
+          <Nav />
+          <main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );
